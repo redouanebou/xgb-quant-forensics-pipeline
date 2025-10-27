@@ -4,7 +4,7 @@ This project is a 2-stage quantitative research pipeline. It's designed to find 
 
 ---
 
-## 1. Stage 1: The "Forensics" Script (`darwin.py`)
+## 1. Stage 1: The "Forensics" Script (`red1.py`)
 
 This script acts like a detective. Instead of trying to predict every candle, it focuses only on high-potential reversal points (local highs/lows).
 
@@ -15,7 +15,7 @@ This script acts like a detective. Instead of trying to predict every candle, it
 * **Scrapes Evidence:** For every *labeled* reversal, it goes back in time to the **25-minute window *before*** the signal. It scrapes data (RSI, MACD, BBands) from this "evidence window" to see what the market looked like just before a good or bad trade.
 * **Saves Data:** It saves this "evidence" (the features) and the "outcome" (the label) into clean `.parquet` files, creating a perfect dataset for training an AI.
 
-## 2. Stage 2: The "Bouncer" Backtester (`label2.py`)
+## 2. Stage 2: The "Bouncer" Backtester (`red2.py`)
 
 This script simulates a live trading bot that uses the AI model trained on the data from Stage 1.
 
