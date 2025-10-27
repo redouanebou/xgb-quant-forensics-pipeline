@@ -4,8 +4,7 @@ import numpy as np
 import os
 from scipy.signal import argrelextrema
 
-# --- CONFIGURATION ---
-RAW_DATA_PATH = r"D:\duka\EURUSD.csv"
+RAW_DATA_PATH = r"D:\duka\EURUSD.csv"   #this EURUSD.csv is a high quality data m1 candles path
 PROCESSED_DATA_DIR = r"D:\duka\reversal_forensics_data" 
 os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
 
@@ -118,7 +117,7 @@ def process_reversals(full_df, candidates_df, direction):
     return df
 
 def main():
-    print(f"Mongo Tom: Loading raw data from {RAW_DATA_PATH}...")
+    print(f"Loading raw data from {RAW_DATA_PATH}...")
     df = pd.read_csv(
         RAW_DATA_PATH,
         names=['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Tick volume'],
@@ -134,7 +133,7 @@ def main():
     
     for df_to_save, name in [(buy_df, 'buys'), (sell_df, 'sells')]:
         if df_to_save.empty:
-            print(f"\nMongo Tom: No valid {name.upper()} data found. Skipping.")
+            print(f"\nNo valid {name.upper()} data found. Skipping.")
             continue
             
         print(f"\nFinal evidence distribution for {name.upper()}:")
@@ -157,5 +156,6 @@ def main():
 if __name__ == "__main__":
     print("Make sure you have 'pandas-ta' and 'scipy'. If not, 'pip install pandas-ta scipy'.")
     main()
+
 
 
