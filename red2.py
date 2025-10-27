@@ -10,21 +10,18 @@ import os
 import pandas_ta as ta
 import time
 
-# --- CONFIGURATION ---
 SYMBOL = "EURUSD"
-BACKTEST_START_DATE = datetime(2025, 8, 13, tzinfo=pytz.UTC)
+BACKTEST_START_DATE = datetime(2024, 1, 1, tzinfo=pytz.UTC)
 BACKTEST_END_DATE = datetime(2025, 9, 23, tzinfo=pytz.UTC)
 TIMEFRAME = mt5.TIMEFRAME_M1
 MODEL_DIR = r"."
-
-# --- STRATEGY PARAMETERS ---
 INITIAL_BALANCE = 10000.0
-RISK_PER_TRADE_PERCENT = 0.01
+RISK_PER_TRADE_PERCENT = 0.01  #mean 0.01% of account balance in SL
 COMMISSION_PER_LOT = 7.0
 PIP_SIZE = 0.0001
-TP_PIPS = 5.0
-SL_PIPS = 3.0
-REALISTIC_MAX_LOT_SIZE = 50.0 
+TP_PIPS = 10.0
+SL_PIPS = 5.0
+REALISTIC_MAX_LOT_SIZE = 100.0 
 REVERSAL_LOOKBACK = 5
 EVIDENCE_WINDOW = 25
 
@@ -50,18 +47,18 @@ class LiveTickerBacktester:
         try:
             model = xgb.XGBClassifier()
             model.load_model(model_path)
-            print(f"Mongo Tom: {specialist_type.upper()} bouncer is online.")
+            print(f"{specialist_type.upper()} bouncer is online.")
             return model
         except Exception as e:
-            print(f"Mongo Tom: FUCK! Could not load the {specialist_type.upper()} bouncer. Error: {e}")
+            print(f"Could not load the {specialist_type.upper()} bouncer. Error: {e}")
             return None
 
     def load_and_prepare_data(self):
         if not mt5.initialize(): 
-            print("Mongo Tom: MT5 initialize() failed.")
+            print("MT5 initialize() failed.")
             return None
             
-        print(f"Mongo Tom: Fetching broker data for the live ticker...")
+        print(f"Fetching broker data for the live ticker...")
         rates = mt5.copy_rates_range(SYMBOL, TIMEFRAME, BACKTEST_START_DATE, BACKTEST_END_DATE)
         mt5.shutdown()
         if rates is None or len(rates) == 0: return None
@@ -71,7 +68,7 @@ class LiveTickerBacktester:
         df.rename(columns={'time': 'Date_Time', 'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'tick_volume': 'Tick volume'}, inplace=True)
         df.set_index('Date_Time', inplace=True)
         
-        print("Mongo Tom: Building base indicators for the AI...")
+        print("Building base indicators")
         df.ta.rsi(length=14, append=True)
         df.ta.macd(fast=12, slow=26, signal=9, append=True)
         df.ta.bbands(length=20, std=2, append=True)
@@ -79,7 +76,7 @@ class LiveTickerBacktester:
         return df.dropna()
 
     def precompute_signals(self):
-        print("Mongo Tom: Finding all potential dumb money signals...")
+        print("Finding all potential money signals...")
         lows_idx = argrelextrema(self.data['Low'].to_numpy(), np.less_equal, order=REVERSAL_LOOKBACK)[0]
         highs_idx = argrelextrema(self.data['High'].to_numpy(), np.greater_equal, order=REVERSAL_LOOKBACK)[0]
         buy_signals = self.data.iloc[lows_idx].index
@@ -109,22 +106,18 @@ class LiveTickerBacktester:
         if self.data is None or self.buy_bouncer is None or self.sell_bouncer is None: return
             
         print("\n" + "="*50)
-        print(" Mongo Tom's Live Simulation Ticker ENGAGED")
+        print(" Live Simulation Ticker ENGAGED")
         print("="*50 + "\n")
         time.sleep(2)
 
-        # The candle-by-candle loop for true simulation
         for timestamp, candle in self.data.iterrows():
             current_time_str = timestamp.strftime('%Y-%m-%d %H:%M:%S')
             
-            # --- Check for Trade Exit First ---
             if self.is_trade_open:
                 self.check_trade_exit(candle, timestamp)
 
-            # --- If no trade is open, check for a new one ---
             if not self.is_trade_open:
                 if timestamp in self.signals.index:
-                    # A potential signal exists, let's check it
                     signal_type = self.signals.loc[timestamp]
                     print(f"[{current_time_str}] Potential {signal_type} signal detected. Consulting AI bouncer...")
                     
@@ -136,20 +129,18 @@ class LiveTickerBacktester:
                     bouncer = self.buy_bouncer if signal_type == 'BUY' else self.sell_bouncer
                     prediction = bouncer.predict(evidence)[0]
 
-                    if prediction == 1: # AI gives the green light
+                    if prediction == 1: 
                         print(f"[{current_time_str}] Bouncer says GO! Preparing to open {signal_type} trade.")
                         try:
-                            # We open on the next candle's open price
                             next_candle_timestamp = self.data.index[self.data.index.get_loc(timestamp) + 1]
                             next_candle_open = self.data.loc[next_candle_timestamp, 'Open']
                             self.open_trade(signal_type, next_candle_open, next_candle_timestamp)
                         except IndexError: 
                             print(f"[{current_time_str}] Signal at the end of data. Cannot open trade.")
                             continue
-                    else: # AI rejects the trade
-                        print(f"[{current_time_str}] Bouncer says FUCK NO. Trade rejected.")
+                    else: 
+                        print(f"[{current_time_str}] Bouncer says Trade rejected.")
                 else:
-                    # No signal on this candle, just print scanning status
                     print(f"\r[{current_time_str}] Scanning... No signal.", end="")
 
         if self.is_trade_open:
@@ -209,7 +200,7 @@ class LiveTickerBacktester:
 
     def print_final_report(self):
         if not self.trade_history: return
-        print("\n" + "="*50); print(" Mongo Tom's FINAL SIMULATION Report"); print("="*50)
+        print("\n" + "="*50); print("FINAL SIMULATION Report"); print("="*50)
         trades_df = pd.DataFrame(self.trade_history)
         wins = trades_df[trades_df['Profit'] > 0]
         total_trades = len(trades_df)
@@ -222,3 +213,4 @@ class LiveTickerBacktester:
 if __name__ == "__main__":
     backtester = LiveTickerBacktester()
     backtester.run_simulation()
+
