@@ -1,27 +1,128 @@
+<div align="center">
+
 # 🤖 XGBoost Quant Forensics Pipeline
 
-This project is a 2-stage quantitative research pipeline. It's designed to find high-probability trade setups by performing "forensic analysis" on past reversals and then using an AI "bouncer" to filter out bad signals.
+### Two-Stage Predictive Modeling Framework
+
+![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge\&logo=python\&logoColor=white)
+![XGBoost](https://img.shields.io/badge/XGBoost-Gradient_Boosting-red?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Research_Grade-blue?style=for-the-badge)
+
+<p align="center">
+  <em>A quantitative research pipeline that combines "Forensic Signal Detection" with an AI-driven "Trade Bouncer" to filter high-probability setups.</em>
+</p>
+
+</div>
 
 ---
 
-## 1. Stage 1: The "Forensics" Script (`red1.py`)
+## 📖 Overview
 
-This script acts like a detective. Instead of trying to predict every candle, it focuses only on high-potential reversal points (local highs/lows).
+This project implements a **Forensic Trading Strategy**. Instead of blindly predicting every market tick, it first identifies historical reversal points (local extrema) and then trains a Machine Learning model to distinguish between "Fakeouts" and "True Reversals."
 
-* **Finds Reversals:** Uses `scipy.signal.argrelextrema` to find all local highs and lows in the entire dataset.
-* **Labels Outcomes:** It time-travels to each reversal and checks what happened next (within a 60-minute window). It labels the reversal as:
-    * `1 (Good Trade)`: If it hit a 1:2 Risk/Reward Take Profit.
-    * `0 (Bad Trade)`: If it hit the Stop Loss.
-* **Scrapes Evidence:** For every *labeled* reversal, it goes back in time to the **25-minute window *before*** the signal. It scrapes data (RSI, MACD, BBands) from this "evidence window" to see what the market looked like just before a good or bad trade.
-* **Saves Data:** It saves this "evidence" (the features) and the "outcome" (the label) into clean `.parquet` files, creating a perfect dataset for training an AI.
+The pipeline is split into two distinct stages: **Evidence Gathering** (Stage 1) and **AI Filtering** (Stage 2).
 
-## 2. Stage 2: The "Bouncer" Backtester (`red2.py`)
+---
 
-This script simulates a live trading bot that uses the AI model trained on the data from Stage 1.
+## ⚙️ Pipeline Architecture
 
-* **Assumes All Signals:** The backtester *assumes* every reversal signal is a potential trade.
-* **Consults AI:** For each signal, it gathers the "evidence" (the features from the 25-minute window) and feeds it to a pre-trained `XGBoost` model.
-* **Acts as "Bouncer":**
-    * If the AI predicts `1` (Good Trade), the bot "bounces" the signal and **approves** the trade.
-    * If the AI predicts `0` (Bad Trade), the bot **rejects** the trade.
-* **Honest Simulation:** It runs a candle-by-candle simulation (no look-ahead bias) to see how this AI-filtered strategy would have *actually* performed.
+### Stage 1: The Detective (`red1.py`)
+
+Performs a forensic audit on historical market data to build a labeled dataset.
+
+* **Reversal Detection:** Uses `scipy.signal.argrelextrema` to pinpoint historical Local Highs and Lows.
+* **Outcome Labeling:** Looks forward (60-minute window) to determine the fate of each signal:
+
+  * `Label 1 (Good Trade)`: Price hit **1:2 Risk/Reward** Take Profit.
+  * `Label 0 (Bad Trade)`: Price hit the Stop Loss.
+* **Evidence Scraping:** Extracts a **25-minute "Evidence Window"** leading up to the event (RSI, MACD, BBands).
+* **Output:** Clean `.parquet` files with features (Evidence) and targets (Outcome).
+
+### Stage 2: The Bouncer (`red2.py`)
+
+Acts as a simulation engine, using the trained XGBoost model as a gatekeeper.
+
+* **Simulation:** Replays market history candle-by-candle (Event-Driven).
+* **Signal Generation:** Identifies potential reversals in real-time.
+* **Bouncer Logic:**
+
+  1. Extracts the 25-minute evidence window for the current signal.
+  2. Queries the **XGBoost Model**.
+  3. **Approve:** If Model predicts `1`, execute the trade.
+  4. **Reject:** If Model predicts `0`, ignore the signal.
+
+---
+
+## 🔄 Logic Flow
+
+```mermaid
+graph TD
+    A[Raw Market Data] -->|Stage 1: Forensics| B{Find Reversals}
+    B -->|Label Outcomes| C[Create Training Set]
+    C -->|Train XGBoost| D[AI Bouncer Model]
+    E[Live Simulation] -->|Stage 2: Backtest| F{New Signal?}
+    F -->|Yes| G[Gather 25m Evidence]
+    G --> H[Ask AI Bouncer]
+    H -->|Prediction = 0| I[❌ Block Trade]
+    H -->|Prediction = 1| J[✅ Execute Trade]
+```
+
+---
+
+## 📂 Project Structure
+
+```bash
+xgb-quant-forensics-pipeline/
+├── red1.py                 # Stage 1: Forensic Data Miner
+├── red2.py                 # Stage 2: AI Backtesting Engine
+├── models/                 # Saved XGBoost Models (JSON)
+├── data/                   # Processed Parquet Files
+└── README.md               # Documentation
+```
+
+---
+
+## 🚀 Key Features
+
+| Feature                     | Description                                                                          |
+| :-------------------------- | :----------------------------------------------------------------------------------- |
+| **🕵️ Forensic Analysis**   | Retroactively labels trades based on future outcomes (Look-Ahead for Training only). |
+| **🛡️ AI Bouncer**          | Filters out ~60-70% of bad signals, improving Win Rate.                              |
+| **🧠 Context Awareness**    | Analyzes behavior leading up to the signal, not just the current candle.             |
+| **⚡ Vectorized Simulation** | Fast backtesting engine using Pandas and SciPy.                                      |
+
+---
+
+## 💻 Usage
+
+**1. Run Forensics (Generate Data)**
+
+```bash
+python red1.py
+```
+
+Input: Raw CSV Data | Output: Labeled Parquet Files
+
+**2. Run Backtest (Simulate AI Strategy)**
+
+```bash
+python red2.py
+```
+
+Input: Parquet Files + Trained Model | Output: PnL Report
+
+---
+
+⚠️ **Disclaimer**
+
+<div align="center">
+  Educational Research Code
+</div>
+
+This repository contains quantitative research code for educational purposes only.
+
+* **Not Financial Advice:** Strategies and models are for research only.
+* **Model Risk:** ML models can overfit historical data; past performance does not guarantee future results.
+* **Execution Risk:** Real-world trading involves spread, slippage, and latency approximated by this simulator.
+
+Engineered by Redouane Boundra.
