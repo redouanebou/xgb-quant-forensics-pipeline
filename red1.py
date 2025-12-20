@@ -153,9 +153,11 @@ def main():
     print("\nForensics complete.")
 
 
+
 if __name__ == "__main__":
     print("Make sure you have 'pandas-ta' and 'scipy'. If not, 'pip install pandas-ta scipy'.")
     main()
+
 
 
 
