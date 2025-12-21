@@ -210,7 +210,8 @@ class LiveTickerBacktester:
         profit_factor = gross_profit / gross_loss if gross_loss > 0 else 0
         print(f"{'Final Balance':<20}: ${self.balance:,.2f}"); print(f"{'Total Trades':<20}: {total_trades}"); print(f"{'Win Rate':<20}: {win_rate:.2%}"); print(f"{'Profit Factor':<20}: {profit_factor:.2f}"); print("=" * 50)
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     backtester = LiveTickerBacktester()
     backtester.run_simulation()
+
 
