@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🤖 XGBoost Quant Forensics Pipeline
+# 🤖 XGBoost Quant Forensics Pipeline 🤖
 
 ### Two-Stage Predictive Modeling Framework
 
